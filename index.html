@@ -1,0 +1,191 @@
+<!doctype html>
+<head>
+  <meta charset="utf-8">
+
+  <title>Pedro's Parse Messaging App</title>
+  <meta name="description" content="Pedro's Parse Messaging App">
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+  <script type="text/javascript" src="http://www.parsecdn.com/js/parse-1.2.19.min.js"></script>
+  <!--
+  Developed from sample blank project and tutorial in:
+  https://www.parse.com/tutorials/todo-app-with-javascript
+  -->
+</head>
+
+<body>
+  
+  <div id="main">
+    <h1>Welcome to my very own Parse test!</h1>
+
+    <p>This is a chat room demo. Type your name and a message to broadcast to
+       everyone.</p>
+    
+    <form onsubmit="savemsg(); return false;">
+
+    <p><textarea name="conversation" id="conversation" style="width:100%" rows="8" disabled="disabled"></textarea></p>
+
+    <p align="center">
+    <table align="center" width="100%">
+    <tr>
+    <td align="left"><label for="name">Your name:</label></td>
+    <td align="left"><input name="name" id="name" type="text" style="width:100%" /></td>
+    </tr>
+    <tr>
+    <td align="left"><label for="msg">Your message:</label></td>
+    <td align="left"><input name="msg" id="msg" type="text" style="width:100%" /></td>
+    </tr>
+    <tr>
+    <td></td>
+    <td align="left">
+    	<input type="submit" value=" Send " style="width:49%" />
+    	<input type="button" value=" Say 'Hello, Parse!' " style="width:49%" onclick="say_hello(); return false;" />
+    </td>
+    </tr>
+    <tr>
+    <td></td>
+    <td align="left"></td>
+    </tr>
+    </table>
+    </p>
+
+    </form>
+
+    <div style="display:none" class="error">
+      The message could not be sent. An error occurred.
+      Please check your Internet connection and try again.
+    </div>
+
+    <div style="display:none" class="success">
+      Message successfully sent.
+    </div>
+  </div>
+
+  <script type="text/javascript">
+
+	Parse.initialize(
+		"!!!!!INSERT YOUR OWN PARSE IDS HERE!!!!!",
+		"!!!!!INSERT YOUR OWN PARSE IDS HERE!!!!!"
+		);
+	var ConversationClass = Parse.Object.extend(
+		"ConversationClass"
+		/* cute, but doesn't work... :-(
+		{ initialize: function(attr, options) {
+			this.set( "msg_set",   [] );
+			this.set( "msg_count", 0  ); }
+		} */ );
+	var conversationObj = undefined;
+
+	var query = new Parse.Query( ConversationClass );
+	query.first()
+		.then(function(obj) {
+			if( obj === undefined )
+				{
+				console.log( "Conversation was not present in Parse cloud. Creating new." );
+				conversationObj = new ConversationClass();
+				conversationObj.set( "msg_set",   [] );
+				conversationObj.set( "msg_count", 0  );
+				}
+			else
+				{
+				console.log( "Conversation successfully loaded from Parse cloud." );
+				console.log( "Conversation objectId = " + obj.id + "." );
+				conversationObj = obj;
+				}
+			conversationObj.on("change:msg_count", updateconversation);
+			updateconversation();
+			pollsync_reset();
+		}, function() {
+			console.log( "Error retrieving conversation from Parse cloud. Creating new." );
+			conversationObj = new ConversationClass();
+			conversationObj.set( "msg_set",   [] );
+			conversationObj.set( "msg_count", 0  );
+			conversationObj.on("change:msg_count", updateconversation);
+			updateconversation();
+			pollsync_reset();
+		});
+
+
+	function savemsg()
+	{
+		if( $("#name").val() == ""  ||  $("#msg").val() == "" )
+			{
+			alert( "Name and/or message cannot be empty!" );
+			if( $("#name").val() == "" )	$("#name").focus();
+			else				$("#msg").focus();
+			return;
+			}
+
+		var msgs = conversationObj.get( "msg_set" ).slice( 0, 4*2 );
+		msgs.unshift( $("#msg").val()  );
+		msgs.unshift( $("#name").val() );
+
+		conversationObj.increment( "msg_count" );
+		conversationObj.set( "msg_set", msgs );
+	}
+
+	function pollsync()
+	{
+		if( conversationObj.dirty() )
+			{
+			conversationObj.save( null )
+				.then(function() {
+					$(".success").show();
+					setTimeout( function() {$(".success").hide();}, 2000 );
+					pollsync_reset();
+				}, function() {
+					$(".error").show();
+					setTimeout( function() {$(".error").hide();},   2000 );
+					pollsync_reset();
+				});
+			updateconversation();
+			}
+		else
+			{
+			conversationObj.fetch()
+				.then( pollsync_reset, pollsync_reset );
+			}
+	}
+
+	function pollsync_reset()
+	{
+		setTimeout( pollsync, 500 );
+	}
+
+	function updateconversation()
+	{
+		var m = "";
+		var msgs = conversationObj.get( "msg_set" );
+		if( typeof(msgs) == "object" )
+		for( i = 0;  i < msgs.length-1;  i += 2 )
+			{
+			m += msgs[i  ] + ", said:\n" +
+			     msgs[i+1] + "\n\n";
+			}
+		$("#conversation").val( m.substring(0, m.length-2) );
+	}
+
+	function say_hello()
+	{
+		if( $("#name").val() == "" )
+			{
+			alert( "Name cannot be empty!" );
+			$("#name").focus();
+			return;
+			}
+
+		Parse.Cloud.run( 'helloparse', { name: $("#name").val() }, {
+			success: function(msg) {
+				alert( msg );
+				},
+			error: function(error) {
+				}
+			});
+	}
+
+  </script>
+</body>
+
+</html>
