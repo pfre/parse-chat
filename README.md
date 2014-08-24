@@ -10,7 +10,7 @@ a single day for a Ph.D. class demo.
 
 Before using it, you'll have to sign up for Parse at their site. Then change
 the file index.html, where you find the text
-	"!!!!!INSERT YOUR OWN PARSE IDS HERE!!!!!"
+> "!!!!!INSERT YOUR OWN PARSE IDS HERE!!!!!"
 and update this text with your own Parse IDs.
 
 This is mostly a very simple proof of concept, and a GitHub test for me.
