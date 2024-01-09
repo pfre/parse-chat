@@ -8,6 +8,8 @@ Parse does not provide (at this time, August 2014) instant sync
 A WebSocket implementation would have been nice, but this code was written in
 a single day for a Ph.D. class demo.
 
+test added line
+
 Before using it, you'll have to sign up for Parse at their site. Then change
 the file `index.html`, where you find the text
 
